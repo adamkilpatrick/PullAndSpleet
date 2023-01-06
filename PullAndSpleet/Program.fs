@@ -45,7 +45,7 @@ let pullYoutubeVideo (destinationDir:string) (url:string) (key:string) (bpm:stri
     let arguments = new StringBuilder()
     arguments.Append (" -x " + url) |> ignore
     arguments.Append (" -o \""+destination+"\"") |> ignore
-    arguments.Append (" --cach-dir \""+Path.Combine(Path.GetTempPath(), "YoutubeDlCache")+"\"") |> ignore
+    arguments.Append (" --cache-dir \""+Path.Combine(Path.GetTempPath(), "YoutubeDlCache")+"\"") |> ignore
     let startInfo = new ProcessStartInfo("youtube-dl", arguments.ToString())
     startInfo.RedirectStandardOutput <- true
     startInfo.UseShellExecute <- false
