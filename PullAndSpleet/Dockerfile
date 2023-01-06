@@ -36,5 +36,5 @@ RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3
 RUN spleeter separate -p spleeter:4stems -o output audio_example.mp3
 
 WORKDIR /App
-COPY --from=build-env /App/out/* ${LAMBDA_TASK_ROOT}
+COPY --from=build-env /App/out/* /var/task/
 CMD [ "PullAndSpleet::Program::pullAndSpleet" ]
