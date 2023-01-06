@@ -95,6 +95,7 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
         request.Prefix <- prefix
         async {
             let! response = client.ListObjectsV2Async(request) |> Async.AwaitTask
+            printfn "Found %d objects in prefix %s" response.S3Objects.Count prefix
             return response.S3Objects.Count > 0
         }
     let uploadFileToS3(prefix:string) (file: FileInfo)  = 
@@ -102,6 +103,7 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
         uploadRequest.BucketName <- bucketName
         uploadRequest.FilePath <- prefix + "/" + file.Name
         uploadRequest.InputStream <- new FileStream(file.FullName, FileMode.Open)
+        printfn "Uploading %s to prefix %s" file.FullName prefix
         client.UploadPartAsync(uploadRequest) |> Async.AwaitTask        
 
     let (youtubeUrl, key, tempo) = match url with
@@ -111,7 +113,7 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
 
     let youtubeId = youtubeUrl.Split("v=") |> Array.last
     let prefixExists = checkIfS3PrefixExists youtubeId |> Async.RunSynchronously
-    if prefixExists then
+    if not(prefixExists) then
         printfn "Extracting youtube audio from %A" youtubeUrl
         let pulledAudio = pullYoutubeVideo audioDir youtubeUrl (key|>Option.defaultValue "null") (tempo |> Option.map string |> Option.defaultValue "null")
         printfn "Extracted youtube audio to %A" pulledAudio
