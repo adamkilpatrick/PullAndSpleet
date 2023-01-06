@@ -43,9 +43,10 @@ let getSampletteData (id:string) =
 let pullYoutubeVideo (destinationDir:string) (url:string) (key:string) (bpm:string) =
     let destination = destinationDir+"\\%(title)s-%(id)s_"+key+"_"+bpm+"bpm.%(ext)s"
     let arguments = new StringBuilder()
+    arguments.Append (" -v") |> ignore
     arguments.Append (" -x " + url) |> ignore
     arguments.Append (" -o \""+destination+"\"") |> ignore
-    arguments.Append (" --cache-dir \""+Path.Combine(Path.GetTempPath(), "YoutubeDlCache")+"\"") |> ignore
+    arguments.Append (" --cache-dir " + Path.GetTempPath()) |> ignore
     let startInfo = new ProcessStartInfo("youtube-dl", arguments.ToString())
     startInfo.RedirectStandardOutput <- true
     startInfo.UseShellExecute <- false
