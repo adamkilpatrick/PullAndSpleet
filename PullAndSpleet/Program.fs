@@ -3,8 +3,8 @@ open System.Diagnostics
 open System.Text.RegularExpressions
 open System.IO
 open FSharp.Data
-open System.Net.Http
 open Amazon.Lambda.Core
+open Amazon.S3.Model
 
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.SystemTextJson.CamelCaseLambdaJsonSerializer>)>]
 ()
@@ -45,6 +45,7 @@ let pullYoutubeVideo (destinationDir:string) (url:string) (key:string) (bpm:stri
     let arguments = new StringBuilder()
     arguments.Append (" -x " + url) |> ignore
     arguments.Append (" -o \""+destination+"\"") |> ignore
+    arguments.Append (" --cach-dir \""+Path.Combine(Path.GetTempPath(), "YoutubeDlCache")+"\"") |> ignore
     let startInfo = new ProcessStartInfo("youtube-dl", arguments.ToString())
     startInfo.RedirectStandardOutput <- true
     startInfo.UseShellExecute <- false
@@ -81,25 +82,56 @@ let spleetAudio (spleetDir:string) (audioLocation:string)  =
     spleetProcess.WaitForExit() |> ignore
 
 let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
-    payload |> printf "%A"
-    let audioDir = Path.GetTempPath()
-    let spleetDir = Path.GetTempPath()
+    let client = new Amazon.S3.AmazonS3Client();
+    let bucketName = System.Environment.GetEnvironmentVariable("S3_BUCKET")
+    let audioDir = Path.Combine(Path.GetTempPath(), "Audio")
+    let spleetDir = Path.Combine(Path.GetTempPath(), "Spleet")
     let url = payload.url
+
+    let checkIfS3PrefixExists (prefix:string) = 
+        let request = new ListObjectsV2Request()
+        request.BucketName <- bucketName
+        request.Prefix <- prefix
+        async {
+            let! response = client.ListObjectsV2Async(request) |> Async.AwaitTask
+            return response.S3Objects.Count > 0
+        }
+    let uploadFileToS3(prefix:string) (file: FileInfo)  = 
+        let uploadRequest = new UploadPartRequest()
+        uploadRequest.BucketName <- bucketName
+        uploadRequest.FilePath <- prefix + "/" + file.Name
+        uploadRequest.InputStream <- new FileStream(file.FullName, FileMode.Open)
+        client.UploadPartAsync(uploadRequest) |> Async.AwaitTask        
+
     let (youtubeUrl, key, tempo) = match url with
                                     | n when n.ToLower().Contains("youtube") -> (url,Option.None,Option.None)
                                     | _ ->
                                             getSampletteData url
 
     let youtubeId = youtubeUrl.Split("v=") |> Array.last
-    printfn "Extracting youtube audio from %A" youtubeUrl
-    let pulledAudio = pullYoutubeVideo audioDir youtubeUrl (key|>Option.defaultValue "null") (tempo |> Option.map string |> Option.defaultValue "null")
-    printfn "Extracted youtube audio to %A" pulledAudio
-    match (new FileInfo(pulledAudio)).Exists with
-    | true ->
-            spleetAudio spleetDir pulledAudio
-    | false ->
-            let audioLocation = Directory.EnumerateFiles(audioDir) |> Seq.filter(fun n -> n.Contains(youtubeId)) |> Seq.head
-            spleetAudio spleetDir audioLocation
+    let prefixExists = checkIfS3PrefixExists youtubeId |> Async.RunSynchronously
+    if prefixExists then
+        printfn "Extracting youtube audio from %A" youtubeUrl
+        let pulledAudio = pullYoutubeVideo audioDir youtubeUrl (key|>Option.defaultValue "null") (tempo |> Option.map string |> Option.defaultValue "null")
+        printfn "Extracted youtube audio to %A" pulledAudio
+        match (new FileInfo(pulledAudio)).Exists with
+        | true ->
+                spleetAudio spleetDir pulledAudio
+        | false ->
+                let audioLocation = Directory.EnumerateFiles(audioDir) |> Seq.filter(fun n -> n.Contains(youtubeId)) |> Seq.head
+                spleetAudio spleetDir audioLocation
+        
+
+        let allAudioFiles = [audioDir; spleetDir]
+                                                |> List.map (fun n -> new DirectoryInfo(n))
+                                                |> List.map (fun n -> n.EnumerateFiles() |> seq)
+                                                |> Seq.concat
+                                                
+        allAudioFiles
+        |> Seq.map (uploadFileToS3 youtubeId)
+        |> Async.Parallel
+        |> Async.RunSynchronously
+        |> ignore
     printfn "Pull and spleet complete"
 
 [<EntryPoint>]
