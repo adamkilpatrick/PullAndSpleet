@@ -79,6 +79,7 @@ let spleetAudio (spleetDir:string) (audioLocation:string)  =
     arguments.Append (" -o \""+spleetDir+"\"") |> ignore
     let startInfo = new ProcessStartInfo("spleeter", arguments.ToString())
     startInfo.UseShellExecute <- false
+    startInfo.RedirectStandardOutput <- true
     let processToStart = Process.Start(startInfo)
     processToStart.WaitForExit() |> ignore
     let processOut = processToStart.StandardOutput.ReadToEnd()

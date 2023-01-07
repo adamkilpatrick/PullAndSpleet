@@ -11,7 +11,7 @@ RUN dotnet publish -c Release -o out
 # Build runtime image
 FROM public.ecr.aws/lambda/dotnet:6
 RUN yum -y groupinstall "Development Tools"
-RUN yum install -y wget tar xz openssl-devel bzip2-devel libffi-devel libsndfile python-pip xz-devel
+RUN yum install -y wget tar xz openssl-devel bzip2-devel libffi-devel libsndfile python-pip xz-devel libsndfile1 libsndfile1-dev
 
 # Install ffmpeg
 RUN mkdir -v -p /usr/local/bin/ffmpeg
@@ -32,6 +32,7 @@ cd Python-*/ && \
 make altinstall
 RUN pip3.9 install --upgrade youtube-dl
 RUN pip3.9 install --upgrade spleeter
+RUN pip3.9 install --upgrade soundfile
 ENV MODEL_PATH=/tmp
 ENV NUMBA_CACHE_DIR=/tmp
 RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3
