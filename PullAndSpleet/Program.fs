@@ -82,6 +82,14 @@ let spleetAudio (spleetDir:string) (audioLocation:string)  =
     let spleetProcess = Process.Start(startInfo)
     spleetProcess.WaitForExit() |> ignore
 
+let ffprobeHealthCheck() =
+    let arguments = new StringBuilder()
+    arguments.Append (" --version") |> ignore
+    let startInfo = new ProcessStartInfo("ffprobe", arguments.ToString())
+    startInfo.UseShellExecute <- false
+    let spleetProcess = Process.Start(startInfo)
+    spleetProcess.WaitForExit() |> ignore
+
 let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     let client = new Amazon.S3.AmazonS3Client();
     let bucketName = System.Environment.GetEnvironmentVariable("S3_BUCKET")
@@ -90,6 +98,8 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     let spleetDir = Path.Combine(Path.GetTempPath(), "Spleet")
     Directory.CreateDirectory(spleetDir) |> ignore
     let url = payload.url
+    
+    ffprobeHealthCheck() |> ignore
 
     let checkIfS3PrefixExists (prefix:string) = 
         let request = new ListObjectsV2Request()
