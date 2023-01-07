@@ -90,8 +90,10 @@ let ffprobeHealthCheck() =
     let startInfo = new ProcessStartInfo("ffprobe", arguments.ToString())
     startInfo.UseShellExecute <- false
     startInfo.RedirectStandardOutput <- true
-    let spleetProcess = Process.Start(startInfo)
-    spleetProcess.WaitForExit() |> ignore
+    let processToStart = Process.Start(startInfo)
+    processToStart.WaitForExit() |> ignore
+    let processOut = processToStart.StandardOutput.ReadToEnd()
+    printfn "%A" processOut
 
 let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     let client = new Amazon.S3.AmazonS3Client();
