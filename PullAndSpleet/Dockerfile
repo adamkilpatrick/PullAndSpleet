@@ -18,7 +18,7 @@ RUN mkdir -v -p /usr/local/bin/ffmpeg
 WORKDIR /usr/local/bin/ffmpeg
 RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
 RUN tar -v -xf ffmpeg-release-amd64-static.tar.xz --strip-components=1 && \
-rm -v -f ffmpeg-release-i686-static.tar.xz && \
+rm -v -f ffmpeg-release-amd64-static.tar.xz && \
 ln -snf /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg && \
 ln -snf /usr/local/bin/ffmpeg/ffprobe /usr/bin/ffprobe
 
@@ -33,6 +33,7 @@ make altinstall
 RUN pip3.9 install --upgrade youtube-dl
 RUN pip3.9 install --upgrade spleeter
 ENV MODEL_PATH=/tmp
+ENV NUMBA_CACHE_DIR=/tmp
 RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3
 RUN spleeter separate -p spleeter:4stems -o output audio_example.mp3
 
