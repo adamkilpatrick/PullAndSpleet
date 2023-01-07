@@ -16,8 +16,8 @@ RUN yum install -y wget tar xz openssl-devel bzip2-devel libffi-devel libsndfile
 # Install ffmpeg
 RUN mkdir -v -p /usr/local/bin/ffmpeg
 WORKDIR /usr/local/bin/ffmpeg
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-i686-static.tar.xz
-RUN tar -v -xf ffmpeg-release-i686-static.tar.xz --strip-components=1 && \
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+RUN tar -v -xf ffmpeg-release-amd64-static.tar.xz --strip-components=1 && \
 rm -v -f ffmpeg-release-i686-static.tar.xz && \
 ln -snf /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg && \
 ln -snf /usr/local/bin/ffmpeg/ffprobe /usr/bin/ffprobe
