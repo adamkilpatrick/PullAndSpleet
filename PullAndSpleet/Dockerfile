@@ -32,6 +32,7 @@ cd Python-*/ && \
 make altinstall
 RUN pip3.9 install --upgrade youtube-dl
 RUN pip3.9 install --upgrade spleeter
+ENV MODEL_PATH=/tmp
 RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3
 RUN spleeter separate -p spleeter:4stems -o output audio_example.mp3
 
