@@ -31,7 +31,7 @@ cd Python-*/ && \
 ./configure --enable-optimizations && \
 make altinstall
 RUN pip3.9 install --upgrade youtube-dl
-RUN youtube-dl -x https://www.youtube.com/watch?v=nFl458oeo44 -o /tmp/test.%(ext)s -v
+RUN youtube-dl -x https://www.youtube.com/watch?v=nFl458oeo44 -o "/tmp/test.%(ext)s" -v
 RUN pip3.9 install --upgrade spleeter
 RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3
 RUN spleeter separate -p spleeter:4stems -o output audio_example.mp3
