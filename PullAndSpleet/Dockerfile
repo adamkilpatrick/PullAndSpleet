@@ -23,8 +23,8 @@ ln -snf /usr/local/bin/ffmpeg/ffmpeg /usr/bin/ffmpeg && \
 ln -snf /usr/local/bin/ffmpeg/ffprobe /usr/bin/ffprobe
 
 # Install python39 + youtube-dl + spleeter
-RUN mkdir -v -p /opt/python39
-WORKDIR /opt/python39
+RUN mkdir -v -p /tmp/python39
+WORKDIR /tmp/python39
 RUN wget https://www.python.org/ftp/python/3.9.10/Python-3.9.10.tgz && \
 tar xvf Python-3.9.10.tgz && \
 cd Python-*/ && \

@@ -87,6 +87,7 @@ let ffprobeHealthCheck() =
     arguments.Append (" --version") |> ignore
     let startInfo = new ProcessStartInfo("ffprobe", arguments.ToString())
     startInfo.UseShellExecute <- false
+    startInfo.RedirectStandardOutput <- true
     let spleetProcess = Process.Start(startInfo)
     spleetProcess.WaitForExit() |> ignore
 
