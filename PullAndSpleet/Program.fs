@@ -41,7 +41,7 @@ let getSampletteData (id:string) =
         |> (fun n -> (n.Url, n.Spotify.Key |> Option.map (fun n -> n |> int |> Array.get keyMapping), n.Spotify.Tempo))
 
 let pullYoutubeVideo (destinationDir:string) (url:string) (key:string) (bpm:string) =
-    let destination = destinationDir+"\\%(title)s-%(id)s_"+key+"_"+bpm+"bpm.%(ext)s"
+    let destination = Path.Combine(destinationDir,"%(title)s-%(id)s_"+key+"_"+bpm+"bpm.%(ext)s")
     let arguments = new StringBuilder()
     arguments.Append (" -v") |> ignore
     arguments.Append (" -x " + url) |> ignore
@@ -86,7 +86,9 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     let client = new Amazon.S3.AmazonS3Client();
     let bucketName = System.Environment.GetEnvironmentVariable("S3_BUCKET")
     let audioDir = Path.Combine(Path.GetTempPath(), "Audio")
+    Directory.CreateDirectory(audioDir) |> ignore
     let spleetDir = Path.Combine(Path.GetTempPath(), "Spleet")
+    Directory.CreateDirectory(spleetDir) |> ignore
     let url = payload.url
 
     let checkIfS3PrefixExists (prefix:string) = 
