@@ -77,6 +77,7 @@ let spleetAudio (spleetDir:string) (audioLocation:string)  =
     arguments.Append (" \"" + audioLocation+"\"") |> ignore
     arguments.Append (" -p spleeter:4stems") |> ignore
     arguments.Append (" -o \""+spleetDir+"\"") |> ignore
+    arguments.Append (" --verbose") |> ignore
     let startInfo = new ProcessStartInfo("spleeter", arguments.ToString())
     startInfo.UseShellExecute <- false
     startInfo.RedirectStandardOutput <- true
@@ -147,7 +148,7 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
                                                 |> List.map (fun n -> new DirectoryInfo(n))
                                                 |> List.map (fun n -> n.EnumerateFiles() |> seq)
                                                 |> Seq.concat
-                                                
+        printfn "Extracted audio files: %A" allAudioFiles                                        
         allAudioFiles
         |> Seq.map (uploadFileToS3 youtubeId)
         |> Async.Parallel
