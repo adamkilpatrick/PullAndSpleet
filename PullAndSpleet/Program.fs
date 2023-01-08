@@ -87,7 +87,7 @@ let spleetAudio (spleetDir:string) (audioLocation:string)  =
 
 let ffprobeHealthCheck() =
     let arguments = new StringBuilder()
-    arguments.Append (" --version") |> ignore
+    arguments.Append (" -version") |> ignore
     let startInfo = new ProcessStartInfo("ffprobe", arguments.ToString())
     startInfo.UseShellExecute <- false
     startInfo.RedirectStandardOutput <- true
