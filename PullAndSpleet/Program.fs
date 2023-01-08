@@ -119,8 +119,8 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     let uploadFileToS3(prefix:string) (file: FileInfo)  = 
         let uploadRequest = new UploadPartRequest()
         uploadRequest.BucketName <- bucketName
-        uploadRequest.FilePath <- prefix + "/" + file.Name
-        uploadRequest.InputStream <- new FileStream(file.FullName, FileMode.Open)
+        uploadRequest.Key <- prefix + "/" + file.Name
+        uploadRequest.FilePath <- file.FullName
         printfn "Uploading %s to prefix %s" file.FullName prefix
         client.UploadPartAsync(uploadRequest) |> Async.AwaitTask        
 
