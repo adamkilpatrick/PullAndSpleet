@@ -37,8 +37,8 @@ COPY ./spleeterMain.py /usr/local/lib/python3.9/site-packages/spleeter/__main__.
 ENV MODEL_PATH=/tmp
 ENV NUMBA_CACHE_DIR=/tmp
 RUN mkdir /usr/local/lib/python3.9/site-packages/_soundfile_data && cp /usr/lib64/libsndfile.so.1 /usr/local/lib/python3.9/site-packages/_soundfile_data/libsndfile.so
-RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3
-RUN spleeter separate -p spleeter:4stems -o output audio_example.mp3
+RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3 -O /tmp/audio_example.mp3
+RUN spleeter separate -p spleeter:4stems -o /tmp/output /tmp/audio_example.mp3 
 
 WORKDIR /App
 COPY --from=build-env /App/out/* /var/task/
