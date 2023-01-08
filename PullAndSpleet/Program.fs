@@ -146,7 +146,7 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
 
         let allAudioFiles = [audioDir; spleetDir]
                                                 |> List.map (fun n -> new DirectoryInfo(n))
-                                                |> List.map (fun n -> n.EnumerateFiles() |> seq)
+                                                |> List.map (fun n -> n.EnumerateFiles("*", SearchOption.AllDirectories) |> seq)
                                                 |> Seq.concat
         printfn "Extracted audio files: %A" allAudioFiles                                        
         allAudioFiles
