@@ -104,6 +104,11 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     Directory.CreateDirectory(audioDir) |> ignore
     let spleetDir = Path.Combine(Path.GetTempPath(), "Spleet")
     Directory.CreateDirectory(spleetDir) |> ignore
+    [audioDir; spleetDir]
+        |> List.map (fun n -> new DirectoryInfo(n))
+        |> List.map (fun n -> n.EnumerateFiles("*", SearchOption.AllDirectories) |> seq)
+        |> Seq.concat
+        |> Seq.iter (fun n -> n.Delete())
     let url = payload.url
     
     ffprobeHealthCheck() |> ignore
