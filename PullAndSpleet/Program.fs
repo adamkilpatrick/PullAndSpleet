@@ -5,6 +5,7 @@ open System.IO
 open FSharp.Data
 open Amazon.Lambda.Core
 open Amazon.S3.Model
+open System
 
 [<assembly: LambdaSerializer(typeof<Amazon.Lambda.Serialization.SystemTextJson.CamelCaseLambdaJsonSerializer>)>]
 ()
@@ -20,7 +21,7 @@ type SampletteDirectReq = JsonProvider<"""
 {"id":67953479,"exclude":[],"kind":"direct","count":1}
 """>
 
-type LambdaPayload = {url:string}
+type LambdaPayload = {url:string; spleet:Nullable<bool>}
 
 let keyMapping = [|"C";"C#";"D";"D#";"E";"F";"F#";"G";"G#";"A";"A#";"B"|] |> Array.map (fun n -> (n+"maj"))
 
@@ -141,10 +142,12 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
         printfn "Extracting youtube audio from %A" youtubeUrl
         let pulledAudio = pullYoutubeVideo audioDir youtubeUrl (key|>Option.defaultValue "null") (tempo |> Option.map string |> Option.defaultValue "null")
         printfn "Extracted youtube audio to %A" pulledAudio
-        match (new FileInfo(pulledAudio)).Exists with
-        | true ->
+        let shouldSpelet = Option.ofNullable payload.spleet |> Option.defaultValue true
+        match ((new FileInfo(pulledAudio)).Exists, shouldSpelet) with
+        | (_,false) -> ignore()
+        | (true,_) ->
                 spleetAudio spleetDir pulledAudio
-        | false ->
+        | (false,_) ->
                 let audioLocation = Directory.EnumerateFiles(audioDir) |> Seq.filter(fun n -> n.Contains(youtubeId)) |> Seq.head
                 spleetAudio spleetDir audioLocation
         
