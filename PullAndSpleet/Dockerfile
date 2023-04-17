@@ -30,13 +30,11 @@ tar xvf Python-3.9.10.tgz && \
 cd Python-*/ && \
 ./configure --enable-optimizations && \
 make altinstall
-RUN pip3.9 install --upgrade youtube-dl
-RUN pip3.9 install --upgrade spleeter
-RUN pip3.9 install --upgrade soundfile
+COPY ./requirements.txt ./
+RUN pip3.9 install -r requirements.txt
 COPY ./spleeterMain.py /usr/local/lib/python3.9/site-packages/spleeter/__main__.py
 ENV MODEL_PATH=/tmp
 ENV NUMBA_CACHE_DIR=/tmp
-RUN mkdir /usr/local/lib/python3.9/site-packages/_soundfile_data && cp /usr/lib64/libsndfile.so.1 /usr/local/lib/python3.9/site-packages/_soundfile_data/libsndfile.so
 
 WORKDIR /App
 RUN wget https://github.com/deezer/spleeter/raw/master/audio_example.mp3 -O /tmp/audio_example.mp3
