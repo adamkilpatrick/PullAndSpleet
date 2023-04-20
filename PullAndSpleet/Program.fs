@@ -98,9 +98,36 @@ let ffprobeHealthCheck() =
     let processOut = processToStart.StandardOutput.ReadToEnd()
     printfn "%A" processOut
 
+let uploadFileToS3 (client: Amazon.S3.AmazonS3Client) (bucketName: string) (prefix:string) (file: FileInfo)  = 
+    let uploadRequest = new UploadPartRequest()
+    uploadRequest.BucketName <- bucketName
+    uploadRequest.Key <- prefix + "/" + file.Name
+    uploadRequest.FilePath <- file.FullName
+    printfn "Uploading %s to prefix %s" file.FullName prefix
+    client.UploadPartAsync(uploadRequest) 
+    |> Async.AwaitTask 
+    |> Async.Ignore
+
+let checkIfS3PrefixExists (client: Amazon.S3.AmazonS3Client) (bucketName: string) (prefix:string) = 
+    let request = new ListObjectsV2Request()
+    request.BucketName <- bucketName
+    request.Prefix <- prefix
+    async {
+        let! response = client.ListObjectsV2Async(request) |> Async.AwaitTask
+        printfn "Found %d objects in prefix %s" response.S3Objects.Count prefix
+        return response.S3Objects.Count > 0
+    }
+    
 let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
-    let client = new Amazon.S3.AmazonS3Client();
-    let bucketName = System.Environment.GetEnvironmentVariable("S3_BUCKET")
+    let bucketName = System.Environment.GetEnvironmentVariable("S3_BUCKET") |> Option.ofObj
+
+    let (fileUploader, fileExistChecker) = match bucketName with
+                                                    | Some bucket -> 
+                                                        let client = new Amazon.S3.AmazonS3Client()
+                                                        (uploadFileToS3 client bucket, checkIfS3PrefixExists client bucket)
+                                                    | None -> 
+                                                        ((fun s f -> async{ignore()}), (fun s -> async{return false} ))
+    
     let audioDir = Path.Combine(Path.GetTempPath(), "Audio")
     Directory.CreateDirectory(audioDir) |> ignore
     let spleetDir = Path.Combine(Path.GetTempPath(), "Spleet")
@@ -114,30 +141,13 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     
     ffprobeHealthCheck() |> ignore
 
-    let checkIfS3PrefixExists (prefix:string) = 
-        let request = new ListObjectsV2Request()
-        request.BucketName <- bucketName
-        request.Prefix <- prefix
-        async {
-            let! response = client.ListObjectsV2Async(request) |> Async.AwaitTask
-            printfn "Found %d objects in prefix %s" response.S3Objects.Count prefix
-            return response.S3Objects.Count > 0
-        }
-    let uploadFileToS3(prefix:string) (file: FileInfo)  = 
-        let uploadRequest = new UploadPartRequest()
-        uploadRequest.BucketName <- bucketName
-        uploadRequest.Key <- prefix + "/" + file.Name
-        uploadRequest.FilePath <- file.FullName
-        printfn "Uploading %s to prefix %s" file.FullName prefix
-        client.UploadPartAsync(uploadRequest) |> Async.AwaitTask        
-
     let (youtubeUrl, key, tempo) = match url with
                                     | n when n.ToLower().Contains("youtube") -> (url,Option.None,Option.None)
                                     | _ ->
                                             getSampletteData url
 
     let youtubeId = youtubeUrl.Split("v=") |> Array.last
-    let prefixExists = checkIfS3PrefixExists youtubeId |> Async.RunSynchronously
+    let prefixExists = fileExistChecker youtubeId |> Async.RunSynchronously
     if not(prefixExists) then
         printfn "Extracting youtube audio from %A" youtubeUrl
         let pulledAudio = pullYoutubeVideo audioDir youtubeUrl (key|>Option.defaultValue "null") (tempo |> Option.map string |> Option.defaultValue "null")
@@ -158,7 +168,7 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
                                                 |> Seq.concat
         printfn "Extracted audio files: %A" allAudioFiles                                        
         allAudioFiles
-        |> Seq.map (uploadFileToS3 youtubeId)
+        |> Seq.map (fileUploader youtubeId)
         |> Async.Parallel
         |> Async.RunSynchronously
         |> ignore

@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  pull-and-spleet-lambda:
+    build: 
+      dockerfile: "Dockerfile"
+    ports:
+      - "9000:8080"
+  smoke-test:
+    image: curlimages/curl
+    depends_on: 
+      - pull-and-spleet-lambda
+    entrypoint: "curl -XPOST http://pull-and-spleet-lambda:8080/2015-03-31/functions/function/invocations -d '{\"url\":\"https://www.youtube.com/watch?v=-ZVZgCrHy5E\"}' "
+    
