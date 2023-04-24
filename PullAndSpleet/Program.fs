@@ -42,7 +42,7 @@ let getSampletteData (id:string) =
         |> (fun n -> (n.Url, n.Spotify.Key |> Option.map (fun n -> n |> int |> Array.get keyMapping), n.Spotify.Tempo))
 
 let pullYoutubeVideo (destinationDir:string) (url:string) (key:string) (bpm:string) =
-    let destination = Path.Combine(destinationDir,"%(title)s-%(id)s_"+key+"_"+bpm+"bpm.%(ext)s")
+    let destination = Path.Combine(destinationDir,"%(title)s_%(id)s_"+key+"_"+bpm+"bpm.%(ext)s")
     let arguments = new StringBuilder()
     arguments.Append (" -v") |> ignore
     arguments.Append (" -x " + url) |> ignore
@@ -151,9 +151,10 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
     if not(prefixExists) then
         printfn "Extracting youtube audio from %A" youtubeUrl
         let pulledAudio = pullYoutubeVideo audioDir youtubeUrl (key|>Option.defaultValue "null") (tempo |> Option.map string |> Option.defaultValue "null")
+        let pulledAudioInfo = FileInfo(pulledAudio)
         printfn "Extracted youtube audio to %A" pulledAudio
-        let shouldSpelet = Option.ofNullable payload.spleet |> Option.defaultValue true
-        match ((new FileInfo(pulledAudio)).Exists, shouldSpelet) with
+        let shouldSpleet = Option.ofNullable payload.spleet |> Option.defaultValue true
+        match (pulledAudioInfo.Exists, shouldSpleet) with
         | (_,false) -> ignore()
         | (true,_) ->
                 spleetAudio spleetDir pulledAudio
@@ -166,10 +167,19 @@ let pullAndSpleet (payload: LambdaPayload) (lambdaContext: ILambdaContext) =
                                                 |> List.map (fun n -> new DirectoryInfo(n))
                                                 |> List.map (fun n -> n.EnumerateFiles("*", SearchOption.AllDirectories) |> seq)
                                                 |> Seq.concat
-        printfn "Extracted audio files: %A" allAudioFiles                                        
+        printfn "Extracted audio files: %A" allAudioFiles
+        let renameIfSpleet (fileName:string) =
+            match fileName with
+            | name when name = pulledAudioInfo.Name -> fileName
+            | _ -> pulledAudioInfo.Name.Replace(pulledAudioInfo.Extension,"")+"_"+fileName
+
+        let outputDir = Path.Combine(Path.GetTempPath(), "Output")
+        Directory.CreateDirectory(outputDir) |> ignore                                        
         allAudioFiles
-        |> Seq.map (fileUploader youtubeId)
-        |> Async.Parallel
+        |> Seq.iter (fun file -> file.CopyTo(Path.Combine(outputDir, (renameIfSpleet file.Name)), true) |> ignore)
+        let zipPath = Path.Combine(Path.GetTempPath(), youtubeId+".zip")
+        System.IO.Compression.ZipFile.CreateFromDirectory(outputDir, zipPath)
+        fileUploader youtubeId (new FileInfo(zipPath))
         |> Async.RunSynchronously
         |> ignore
     printfn "Pull and spleet complete"
